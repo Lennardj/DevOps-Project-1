@@ -97,26 +97,72 @@ Project Overview
 
 
    # Step 1: Infrastructure Setup on AWS
-   1.1 Create vpc
-   ```bash
-   aws ec2 create-vpc --cidr-block 10.0.0.0/16
-   ```
+   ## 1.1 Create vpc
+```bash
+aws ec2 create-vpc --cidr-block 10.0.0.0/16
+```
 
-   Configure subnets:
-   ```bash
-    aws ec2 create-subnet --vpc-id <vpc-id> --cidr-block 10.0.1.0/24 --availability-zone us-east-1a
+Configure subnets:
+```bash
+aws ec2 create-subnet --vpc-id <vpc-id> --cidr-block 10.0.1.0/24 --availability-zone us-east-1a
 
-   ```
+```
 
    Set up internet Gateway:
-   ```bash
-    aws ec2 create-internet-gateway
+```bash
+aws ec2 create-internet-gateway
  aws ec2 attach-internet-gateway --vpc-id <vpc-id> --internet-gateway-id <igw-id>
-   ```
+```
 
-   create route tables and associated with subnet
-   ```bash
-    aws ec2 create-route-table --vpc-id <vpc-id>
- aws ec2 create-route --route-table-id <rtb-id> --destination-cidr-block 0.0.0.0/0 --gateway-id <igw-id>
- aws ec2 associate-route-table --subnet-id <subnet-id> --route-table-id <rtb-id>
-   ```
+create route tables and associated with subnet
+```bash
+aws ec2 create-route-table --vpc-id <vpc-id>
+aws ec2 create-route --route-table-id <rtb-id> --destination-cidr-block 0.0.0.0/0 --gateway-id <igw-id>
+aws ec2 associate-route-table --subnet-id <subnet-id> --route-table-id <rtb-id>
+aws ec2 modify-subnet-attribute \
+  --subnet-id <subnet-id> \
+  --map-public-ip-on-launch
+```
+
+### Set up security group
+create a security group
+```bash
+   aws ec2 create-security-group --group-name MySecurityGroup --description "Security group for my app" --vpc-id <vpc-id>
+```
+
+Allow SSh, HTTP, and HTTPS
+```bash
+aws ec2 authorize-security-group-ingress --group-id <sg-id> --protocol tcp --port 22 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id <sg-id> --protocol tcp --port 80 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id <sg-id> --protocol tcp --port 443 --cidr 0.0.0.0/0
+```
+## 1.2 Provissioning EC2 Instance
+
+Launch EC2 instance
+```bash
+ aws ec2 run-instances --image-id ami-0abcdef1234567890 --count 1 --instance-type t2.micro --key-name MyKeyPair --security-group-ids <sg-id> --subnet-id <subnet-id>
+```
+
+Install Docker and Jenkins on the EC2 instance:
+```bash
+ sudo yum update -y
+ sudo yum install docker -y
+ sudo service docker start
+ sudo usermod -a -G docker ec2-user
+
+ # Jenkins
+ sudo yum install java-1.8.0-openjdk -y
+ wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+ rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+ sudo yum install jenkins -y
+ sudo systemctl start jenkins
+ sudo systemctl enable jenkins
+```
+
+## Setting up an RDS databse
+
+### Provision an RDS Instance:
+create a MSQL instance
+```bash
+
+```
